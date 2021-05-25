@@ -39,6 +39,7 @@ class simulation:
                                 herz=self.herz))
     
     def calculateCollision(self, ball1, ball2):
+        #https://en.wikipedia.org/wiki/Elastic_collision
         if self.calculateDistance(ball1, ball2, 0) < 0:
             distance = self.calculateDistance(ball1, ball2, 1)
             

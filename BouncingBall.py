@@ -8,17 +8,20 @@ def main():
 
     Scene = o3d.visualization.Visualizer()
     Scene.create_window()
+    ctr = Scene.get_view_control()    
     
     #XZY
     meshSphere = objectPhys(geo="sphere", vel=np.array([0.1,-0.2,0.5]), pos=np.array([0,0,0]))
     
+    boundaries = np.array([[-.5,.5],[-.5,.5],[-.5,.5]])
+    
     walls = []
     wallsPos = np.array([   [[0,-.5,0], [0,0,0]],
+                            [[0,.5,0], [0,0,0]],
                             [[0,0,-.5], [np.pi/2,0,0]],
                             [[0,0,.5], [np.pi/2,0,0]],
                             [[.5,0,0], [0,0,np.pi/2]],
-                            [[-.5,0,0], [0,0,np.pi/2]],
-                            [[0,.5,0], [0,0,0]]])
+                            [[-.5,0,0], [0,0,np.pi/2]]])
 
     for i in wallsPos:
         walls.append(objectPhys(geo="wall", pos=i[0], rot=i[1], herz=herz))
@@ -28,14 +31,34 @@ def main():
     for wall in walls:
         Scene.add_geometry(wall.geo)
     
+    ctr.set_zoom(5.0)
+    ctr.set_front([1,1,1])
+    
     for i in range(10*herz):
         
-        checkCollision(meshSphere, walls[0])
+        fpos = meshSphere.checkFuture()
         
         for i in range(len(meshSphere.pos)):
-            if meshSphere.pos[i] + 0.1 > 0.5:
+            if meshSphere.pos[i] - meshSphere.rad < boundaries[i][0]:
+                # Calculate position after collision
+                edge = boundaries[i][0]
+                pos = meshSphere.pos[i] - meshSphere.rad
+                
+                b2 = edge - (-meshSphere.vel[i]) * ((pos-edge)/-meshSphere.vel[i])
+                meshSphere.pos[i] = -meshSphere.vel[i] * 1/herz + b2 + meshSphere.rad
+                
+                # Revert speed
                 meshSphere.vel[i] = -meshSphere.vel[i]
-            elif meshSphere.pos[i] - 0.1 < -0.5:
+                
+            elif meshSphere.pos[i] + meshSphere.rad > boundaries[i][1]:
+                # Calculate position after collision
+                edge = boundaries[i][1]
+                pos = meshSphere.pos[i] + meshSphere.rad
+                
+                b2 = edge - (-meshSphere.vel[i]) * ((pos-edge)/-meshSphere.vel[i])
+                meshSphere.pos[i] = -meshSphere.vel[i] * 1/herz + b2 - meshSphere.rad
+                
+                # Revert speed
                 meshSphere.vel[i] = -meshSphere.vel[i]
         
         
@@ -48,11 +71,12 @@ def main():
         Scene.update_renderer()
         
         time.sleep(1/herz)
-        
+    
+    #Scene.run()
     Scene.destroy_window()
 
 def checkCollision(obj1, obj2):
-    futurePos = [obj1.checkFuture(), obj2.checkFuture()]
+    pass
     
 class objectPhys:
     def __init__(self, *args, **kwargs):
@@ -63,9 +87,9 @@ class objectPhys:
         
         if kwargs["geo"] == "sphere":
             self.mass = kwargs.get("mass", 1)
-            rad = kwargs.get("rad", 0.1)
+            self.rad = kwargs.get("rad", 0.1)
             
-            self.createSphere(rad)
+            self.createSphere()
         elif kwargs["geo"] == "box":
             self.mass = kwargs.get("mass", 1)
             self.createBox()
@@ -73,8 +97,8 @@ class objectPhys:
             self.mass = kwargs.get("mass", 0)
             self.createWall()
         
-    def createSphere(self, rad):
-        self.geo = o3d.geometry.TriangleMesh.create_sphere(radius=rad)
+    def createSphere(self):
+        self.geo = o3d.geometry.TriangleMesh.create_sphere(radius=self.rad)
         self.geo.compute_vertex_normals()
         self.geo.paint_uniform_color([0.1, 0.1, 0.7])
         
