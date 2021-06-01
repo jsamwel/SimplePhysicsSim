@@ -9,7 +9,7 @@ def main():
     sim = simulation(herz=herz)
     sim.generateSpheres()
     
-    for i in range(herz*10):
+    for i in range(herz*1):
         sim.update()
     
         spherepos = []
@@ -41,10 +41,10 @@ class simulation:
         self.herz = kwargs.get("herz", 60)
     
     def generateSpheres(self):
-        self.spheres.append(sphere(vel=np.array([1.0,0,0]),
+        self.spheres.append(sphere(vel=np.array([4.0,0,0]),
                                 herz=self.herz))
         self.spheres.append(sphere(pos=np.array([.3,0,0]),
-                                vel=np.array([-1.0,0,0]),
+                                vel=np.array([-4.0,0,0]),
                                 herz=self.herz))
     
     def calculateCollision(self, sphere1, sphere2):
@@ -52,11 +52,8 @@ class simulation:
         
         distance = self.calculateDistance(sphere1, sphere2, 1)
         
-        m1 = sphere1.mass
-        m2 = sphere2.mass
-        
-        v1 = sphere1.vel
-        v2 = sphere2.vel
+        m1, m2 = sphere1.mass, sphere2.mass
+        v1, v2 = sphere1.vel, sphere2.vel
     
         v1s = np.sqrt(np.square(v1[0])+np.square(v1[1])+np.square(v1[1]))
         v2s = np.sqrt(np.square(v2[0])+np.square(v2[1])+np.square(v2[1]))
@@ -87,7 +84,7 @@ class simulation:
         else:
             dPos = sphere1.pos - sphere2.pos
         
-        dDis = np.sqrt(np.square(dPos[0])+np.square(dPos[1])+np.square(dPos[1]))
+        dDis = np.sqrt(np.square(dPos[0])+np.square(dPos[1])+np.square(dPos[2]))
         
         return dDis - sphere1.rad - sphere2.rad
         
