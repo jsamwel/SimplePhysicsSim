@@ -43,7 +43,7 @@ class simulation:
     def generateSpheres(self):
         self.spheres.append(sphere(vel=np.array([4.0,0,0]),
                                 herz=self.herz))
-        self.spheres.append(sphere(pos=np.array([.3,0,0]),
+        self.spheres.append(sphere(pos=np.array([1,.1,0]),
                                 vel=np.array([-4.0,0,0]),
                                 herz=self.herz))
     
@@ -57,20 +57,18 @@ class simulation:
     
         v1s = np.sqrt(np.square(v1[0])+np.square(v1[1])+np.square(v1[1]))
         v2s = np.sqrt(np.square(v2[0])+np.square(v2[1])+np.square(v2[1]))
-    
-        v1n = (v1*(m1-m2)+2*m2*v2)/(m1+m2)
-        v2n = (v2*(m2-m1)+2*m1*v1)/(m1+m2)
         
         s = distance / (v1s + v2s)
         
-        cpos1 = sphere1.pos + sphere1.vel * s
-        cpos2 = sphere2.pos + sphere2.vel * s
+        #Calculate the position at the time of collision
+        p1 = sphere1.pos + sphere1.vel * s
+        p2 = sphere2.pos + sphere2.vel * s
         
-        npos1 = cpos1 + v1n * (1 / self.herz - s)
-        npos2 = cpos2 + v2n * (1 / self.herz - s)
-        
-        sphere1.pos = npos1
-        sphere2.pos = npos2
+        v1n = v1 - (2 * m2 / (m1 + m2)) * np.dot(v1 - v2, p1 - p2) / np.linalg.norm(p1 - p2) ** 2 * (p1 - p2)
+        v2n = v2 - (2 * m1 / (m2 + m1)) * np.dot(v2 - v1, p2 - p1) / np.linalg.norm(p2 - p1) ** 2 * (p2 - p1)
+
+        sphere1.pos = p1 + v1n * (1 / self.herz - s)
+        sphere2.pos = p2 + v2n * (1 / self.herz - s)
         
         sphere1.vel = v1n
         sphere2.vel = v2n
