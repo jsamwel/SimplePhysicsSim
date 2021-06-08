@@ -17,6 +17,8 @@ def main():
             spherepos.append(sphere.pos)
         
         print(spherepos)
+    
+    sim.Scene.run()
 
 class sphere:
     def __init__(self, **kwargs):
@@ -38,14 +40,30 @@ class sphere:
 class simulation:
     def __init__(self, **kwargs):
         self.spheres = []
+        self.geo = []
         self.herz = kwargs.get("herz", 60)
+        
+        self.Scene = o3d.visualization.Visualizer()
+        self.Scene.create_window()
+        
+        self.ctr = self.Scene.get_view_control() 
     
     def generateSpheres(self):
-        self.spheres.append(sphere(vel=np.array([4.0,0,0]),
+        self.spheres.append(sphere(vel=np.array([.5,0,0]),
                                 herz=self.herz))
         self.spheres.append(sphere(pos=np.array([1,.1,0]),
-                                vel=np.array([-4.0,0,0]),
+                                vel=np.array([-0.5,0,0]),
                                 herz=self.herz))
+        
+        for i in range(len(self.spheres)):
+            self.geo.append(o3d.geometry.TriangleMesh.create_sphere(radius=self.spheres[i].rad))
+            self.geo[i].compute_vertex_normals()
+            self.geo[i].paint_uniform_color([0.1, 0.1, 0.7])
+            
+            self.Scene.add_geometry(self.geo[i])
+            
+        self.ctr.set_zoom(10.0)
+        self.ctr.set_front([0,0,1])
     
     def calculateCollision(self, sphere1, sphere2):
         #https://en.wikipedia.org/wiki/Elastic_collision
@@ -105,8 +123,12 @@ class simulation:
             elif not sphere1.updated:
                 sphere1.update()
                 
-        for sphere in self.spheres:
-            sphere.updated = 0
+        for i in range(len(self.spheres)):
+            self.geo[i].translate(self.spheres[i].pos, relative=False)
+            self.Scene.update_geometry(self.geo[i])
+            self.Scene.poll_events()
+            self.Scene.update_renderer()
+            self.spheres[i].updated = 0
     
 if __name__ == "__main__":
     main()
