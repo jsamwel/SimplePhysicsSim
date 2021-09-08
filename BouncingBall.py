@@ -31,15 +31,17 @@ def main():
     for wall in walls:
         Scene.add_geometry(wall.geo)
     
-    ctr.set_zoom(5.0)
+    ctr.set_constant_z_far(-10)
+    ctr.set_constant_z_near(2)
+    ctr.set_zoom(20.0)
     ctr.set_front([1,1,1])
     
-    for i in range(10*herz):
+    for i in range(1*herz):
         
         fpos = meshSphere.checkFuture()
         
-        for i in range(len(meshSphere.pos)):
-            if meshSphere.pos[i] - meshSphere.rad < boundaries[i][0]:
+        for i in range(len(fpos)):
+            if fpos[i] - meshSphere.rad < boundaries[i][0]:
                 # Calculate position after collision
                 edge = boundaries[i][0]
                 pos = meshSphere.pos[i] - meshSphere.rad
@@ -50,7 +52,7 @@ def main():
                 # Revert speed
                 meshSphere.vel[i] = -meshSphere.vel[i]
                 
-            elif meshSphere.pos[i] + meshSphere.rad > boundaries[i][1]:
+            elif fpos[i] + meshSphere.rad > boundaries[i][1]:
                 # Calculate position after collision
                 edge = boundaries[i][1]
                 pos = meshSphere.pos[i] + meshSphere.rad
