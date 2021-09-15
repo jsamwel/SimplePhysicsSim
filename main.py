@@ -2,10 +2,11 @@
 import numpy as np
 import open3d as o3d
 import time
+from random import randint, seed
 
 def main():
     herz = 50
-    debug = True
+    debug = False
 
     sim = simulation(herz=herz)
     sim.generateSpheres()
@@ -152,26 +153,26 @@ class simulation:
         return dDis - sphere1.rad - sphere2.rad
         
     def update(self):
-        amount = len(self.spheres)
+        numSpheres = len(self.spheres)
     
-        for i in range(amount):
-            sphere1 = self.spheres[i]
+        for currentSphere in range(numSpheres):
+            sphere1 = self.spheres[currentSphere]
             
-            if i < (amount - 1) and not sphere1.updated:
-                for y in range(i + 1, amount):
-                    sphere2 = self.spheres[y]
+            #Check for each sphere in the list if it will collide with the other spheres
+            if currentSphere < (numSpheres - 1) and not sphere1.updated:
+                for checkSphere in range(currentSphere + 1, numSpheres):
+                    sphere2 = self.spheres[checkSphere]
                     
                     if self.calculateDistance(sphere1, sphere2, 0) < 0:
                         self.calculateCollision(sphere1, sphere2)
-                    elif (y == amount - 1) and not sphere1.updated:
-                        if not self.checkBoundaries(sphere1):
-                            sphere1.update()
                         
-            elif not sphere1.updated:
+            #If the sphere does not collide update its position normally
+            if not sphere1.updated:
                 if not self.checkBoundaries(sphere1):
                     sphere1.update()
-                
-        for x in range(amount):
+        
+        #Update the scene with all the new positions
+        for x in range(numSpheres):
             self.geo[x].translate(self.spheres[x].pos, relative=False)
             self.Scene.update_geometry(self.geo[x])
             self.Scene.poll_events()
