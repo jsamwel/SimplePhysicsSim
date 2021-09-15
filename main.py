@@ -41,15 +41,16 @@ class classSphere:
         
     def updateVisual(self):        
         self.geo.translate(self.pos, relative=False)
-        
-    def getFuturePos(self):
-        return self.pos + self.vel * self.freq
-        
+    
     def __createVisual(self):
         self.geo = o3d.geometry.TriangleMesh.create_sphere(radius=self.rad)
         self.geo.compute_vertex_normals()
         self.geo.paint_uniform_color([0.1, 0.1, 0.7])
-
+    
+    @property
+    def futurePos(self):
+        return self.pos + self.vel * self.freq
+        
 class simulation:
     def __init__(self, **kwargs):
         self.herz = kwargs.get("herz", 60)
@@ -88,7 +89,8 @@ class simulation:
             self.Scene.add_geometry(sphere.geo)
     
     def calculateCollision(self, sphere1, sphere2):
-        #https://en.wikipedia.org/wiki/Elastic_collision
+        # https://en.wikipedia.org/wiki/Elastic_collision
+        # This function only works with spheres
         
         distance = self.calculateDistance(sphere1, sphere2, 1)
         
@@ -100,10 +102,11 @@ class simulation:
         
         s = distance / (v1s + v2s)
         
-        #Calculate the position at the time of collision
+        # Calculate the position at the time of collision
         p1 = sphere1.pos + sphere1.vel * s
         p2 = sphere2.pos + sphere2.vel * s
         
+        # Calculate new speeds after the collision
         v1n = v1 - (2 * m2 / (m1 + m2)) * np.dot(v1 - v2, p1 - p2) / np.linalg.norm(p1 - p2) ** 2 * (p1 - p2)
         v2n = v2 - (2 * m1 / (m2 + m1)) * np.dot(v2 - v1, p2 - p1) / np.linalg.norm(p2 - p1) ** 2 * (p2 - p1)
         
@@ -115,7 +118,7 @@ class simulation:
         sphere1.updated, sphere2.updated = 1, 1
         
     def updatePosSphere(self, sphere):
-        fpos = sphere.getFuturePos()
+        fpos = sphere.futurePos
         
         for i in range(len(fpos)):
             if fpos[i] - sphere.rad < self.boundaries[i][0]:
@@ -147,7 +150,7 @@ class simulation:
         
     def calculateDistance(self, sphere1, sphere2, current):
         if not current:
-            dPos = sphere1.getFuturePos() - sphere2.getFuturePos()
+            dPos = sphere1.futurePos - sphere2.futurePos
         else:
             dPos = sphere1.pos - sphere2.pos
         
@@ -161,7 +164,7 @@ class simulation:
         for currentSphere in range(numSpheres):
             sphere1 = self.spheres[currentSphere]
             
-            #Check for each sphere in the list if it will collide with the other spheres
+            # Check for each sphere in the list if it will collide with the other spheres
             if currentSphere < (numSpheres - 1):
                 for checkSphere in range(currentSphere + 1, numSpheres):
                     sphere2 = self.spheres[checkSphere]
@@ -169,13 +172,13 @@ class simulation:
                     if self.calculateDistance(sphere1, sphere2, 0) < 0:
                         self.calculateCollision(sphere1, sphere2)
                         
-            #If the sphere does not collide update its position normally
+            # If the sphere does not collide update its position normally
             if not sphere1.updated:
                 self.updatePosSphere(sphere1)
                     
             sphere1.updateVisual()
         
-            #Update the scene with all the new positions
+            # Update the scene with all the new positions
             self.Scene.update_geometry(sphere1.geo)
             sphere1.updated = 0
             
