@@ -2,14 +2,12 @@
 import numpy as np
 import open3d as o3d
 import time
-from random import randint, seed
 
 def main():
     herz = 50
     debug = False
 
     sim = simulation(herz=herz)
-    sim.generateSpheres()
     
     for i in range(herz*5):
         sim.update()
@@ -25,11 +23,11 @@ def main():
     
     sim.Scene.run()
 
-class boundary:
+class classBoundary:
     def __init__(self, **kwargs):
         pass
 
-class sphere:
+class classSphere:
     def __init__(self, **kwargs):
         self.pos = kwargs.get("pos", np.array([0,0,0]))
         self.rot = kwargs.get("rot", np.array([0,0,0]))
@@ -39,54 +37,55 @@ class sphere:
         self.rad = kwargs.get("rad", 0.1)
         self.updated = 0
         
-    def update(self):
-        self.pos = self.pos + self.vel * self.freq
+        self.__createVisual()
         
-        self.updated = 1
+    def updateVisual(self):        
+        self.geo.translate(self.pos, relative=False)
         
     def getFuturePos(self):
         return self.pos + self.vel * self.freq
+        
+    def __createVisual(self):
+        self.geo = o3d.geometry.TriangleMesh.create_sphere(radius=self.rad)
+        self.geo.compute_vertex_normals()
+        self.geo.paint_uniform_color([0.1, 0.1, 0.7])
 
 class simulation:
     def __init__(self, **kwargs):
-        self.spheres = []
+        self.herz = kwargs.get("herz", 60)
+        
         self.geo = []
         
         self.boundaries = np.array([[-2,2],[-2,2],[-2,2]])
-        self.herz = kwargs.get("herz", 60)
         
-        self.Scene = o3d.visualization.VisualizerWithKeyCallback()
+        # Create scene for visualisation
+        self.Scene = o3d.visualization.Visualizer()
         self.Scene.create_window()
-        self.Scene.register_key_callback(ord("C"), self.center_view)
-        #self.Scene.set_full_screen(True)
         
+        # Create objects for in simulation
+        self.generateSpheres()
+        
+        # Place camera of the scene
         self.ctr = self.Scene.get_view_control() 
-    
-    def center_view(self, vis):
-        vis.reset_view_point(True)
-    
-    def runSim(self, time):
-        pass
-    
-    def generateSpheres(self):
-        self.spheres.append(sphere(vel=np.array([5,-.05,-.05]),
-                                herz=self.herz))
-        self.spheres.append(sphere(pos=np.array([1,0,0]),
-                                vel=np.array([-5,0,0]),
-                                herz=self.herz))
-        
-        for i in range(len(self.spheres)):
-            self.geo.append(o3d.geometry.TriangleMesh.create_sphere(radius=self.spheres[i].rad))
-            self.geo[i].compute_vertex_normals()
-            self.geo[i].paint_uniform_color([0.1, 0.1, 0.7])
-            
-            self.Scene.add_geometry(self.geo[i])
-            
         self.ctr.set_zoom(10.0)
         self.ctr.set_front([1,0,2])
         self.ctr.set_constant_z_far(5)
         self.ctr.set_constant_z_near(2)
         #self.ctr.translate(0,-10)
+        
+    
+    def generateSpheres(self):
+        self.spheres = []
+    
+        self.spheres.append(classSphere(vel=np.array([5,-.05,-.05]),
+                                herz=self.herz))
+        self.spheres.append(classSphere(pos=np.array([1,0,0]),
+                                vel=np.array([-5,0,0]),
+                                herz=self.herz))
+        
+        # Add visuals of the spheres to the scene
+        for sphere in self.spheres:            
+            self.Scene.add_geometry(sphere.geo)
     
     def calculateCollision(self, sphere1, sphere2):
         #https://en.wikipedia.org/wiki/Elastic_collision
@@ -115,36 +114,36 @@ class simulation:
         sphere1.vel, sphere2.vel = v1n, v2n        
         sphere1.updated, sphere2.updated = 1, 1
         
-    def checkBoundaries(self, sphere1):
-        fpos = sphere1.getFuturePos()
-        returnVar = 0
+    def updatePosSphere(self, sphere):
+        fpos = sphere.getFuturePos()
         
         for i in range(len(fpos)):
-            if fpos[i] - sphere1.rad < self.boundaries[i][0]:
+            if fpos[i] - sphere.rad < self.boundaries[i][0]:
                 # Calculate position after collision
                 edge = self.boundaries[i][0]
-                pos = sphere1.pos[i] - sphere1.rad
+                pos = sphere.pos[i] - sphere.rad
                 
-                b2 = edge - (-sphere1.vel[i]) * ((pos-edge)/-sphere1.vel[i])
-                sphere1.pos[i] = -sphere1.vel[i] * 1/self.herz + b2 + sphere1.rad
+                b2 = edge - (-sphere.vel[i]) * ((pos-edge)/-sphere.vel[i])
+                sphere.pos[i] = -sphere.vel[i] * 1/self.herz + b2 + sphere.rad
                 
                 # Revert speed
-                sphere1.vel[i] = -sphere1.vel[i]
-                returnVar = 1
+                sphere.vel[i] = -sphere.vel[i]
+                sphere.updated = 1
                 
-            elif fpos[i] + sphere1.rad > self.boundaries[i][1]:
+            elif fpos[i] + sphere.rad > self.boundaries[i][1]:
                 # Calculate position after collision
                 edge = self.boundaries[i][1]
-                pos = sphere1.pos[i] + sphere1.rad
+                pos = sphere.pos[i] + sphere.rad
                 
-                b2 = edge - (-sphere1.vel[i]) * ((pos-edge)/-sphere1.vel[i])
-                sphere1.pos[i] = -sphere1.vel[i] * 1/self.herz + b2 - sphere1.rad
+                b2 = edge - (-sphere.vel[i]) * ((pos-edge)/-sphere.vel[i])
+                sphere.pos[i] = -sphere.vel[i] * 1/self.herz + b2 - sphere.rad
                 
                 # Revert speed
-                sphere1.vel[i] = -sphere1.vel[i]
-                returnVar = 1
+                sphere.vel[i] = -sphere.vel[i]
+                sphere.updated = 1
         
-        return returnVar
+        if not sphere.updated:
+            sphere.pos = sphere.pos + sphere.vel * sphere.freq
         
     def calculateDistance(self, sphere1, sphere2, current):
         if not current:
@@ -163,7 +162,7 @@ class simulation:
             sphere1 = self.spheres[currentSphere]
             
             #Check for each sphere in the list if it will collide with the other spheres
-            if currentSphere < (numSpheres - 1) and not sphere1.updated:
+            if currentSphere < (numSpheres - 1):
                 for checkSphere in range(currentSphere + 1, numSpheres):
                     sphere2 = self.spheres[checkSphere]
                     
@@ -172,16 +171,16 @@ class simulation:
                         
             #If the sphere does not collide update its position normally
             if not sphere1.updated:
-                if not self.checkBoundaries(sphere1):
-                    sphere1.update()
+                self.updatePosSphere(sphere1)
+                    
+            sphere1.updateVisual()
         
-        #Update the scene with all the new positions
-        for x in range(numSpheres):
-            self.geo[x].translate(self.spheres[x].pos, relative=False)
-            self.Scene.update_geometry(self.geo[x])
-            self.Scene.poll_events()
-            self.Scene.update_renderer()
-            self.spheres[x].updated = 0
+            #Update the scene with all the new positions
+            self.Scene.update_geometry(sphere1.geo)
+            sphere1.updated = 0
+            
+        self.Scene.poll_events()
+        self.Scene.update_renderer()
     
 if __name__ == "__main__":
     main()
