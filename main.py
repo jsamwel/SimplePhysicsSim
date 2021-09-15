@@ -25,6 +25,10 @@ def main():
     
     sim.Scene.run()
 
+class boundary:
+    def __init__(self, **kwargs):
+        pass
+
 class sphere:
     def __init__(self, **kwargs):
         self.pos = kwargs.get("pos", np.array([0,0,0]))
@@ -78,11 +82,11 @@ class simulation:
             
             self.Scene.add_geometry(self.geo[i])
             
-        self.ctr.set_zoom(20.0)
-        #self.ctr.set_front([0,0,5])
-        #self.ctr.set_constant_z_far(-500)
+        self.ctr.set_zoom(10.0)
+        self.ctr.set_front([1,0,2])
+        self.ctr.set_constant_z_far(5)
         self.ctr.set_constant_z_near(2)
-        self.ctr.translate(0,-10)
+        #self.ctr.translate(0,-10)
     
     def calculateCollision(self, sphere1, sphere2):
         #https://en.wikipedia.org/wiki/Elastic_collision
