@@ -1,0 +1,19 @@
+[project]
+name = "physics-simulations"
+version = "0.1.0"
+dependencies = [
+    "open3d"
+]
+requires-python = ">=3.12"
+authors = []
+maintainers = []
+description = ""
+readme = "README.md"
+license = {}
+keywords = []
+classifiers = [
+  "Programming Language :: Python"
+]
+
+[project.scripts]
+bouncing-balls = "src\bouncing_balls:main.py"
